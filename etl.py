@@ -6,7 +6,7 @@ from datetime import datetime
 # EXTRACT
 url = "https://api.open-meteo.com/v1/forecast"
 params = {
-  "latitude": 34.05, "longitude": -118.24,
+  "latitude": 33.70, "longitude": -117.80,
   "hourly": "temperature_2m,precipitation,windspeed_10m",
   "forecast_days": 7
 }

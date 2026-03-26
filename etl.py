@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 from datetime import datetime
 
-# ── EXTRACT ──────────────────────────────────
+# EXTRACT
 url = "https://api.open-meteo.com/v1/forecast"
 params = {
   "latitude": 34.05, "longitude": -118.24,
@@ -13,7 +13,7 @@ params = {
 response = requests.get(url, params=params)
 data = response.json()["hourly"]
 
-# ── TRANSFORM ────────────────────────────────
+# TRANSFORM
 df = pd.DataFrame(data)
 df.rename(columns={
   "time": "recorded_at",
@@ -25,7 +25,7 @@ df.dropna(inplace=True)
 df.drop_duplicates(subset=["recorded_at"], inplace=True)
 df["ingested_at"] = datetime.utcnow()
 
-# ── LOAD ─────────────────────────────────────
+# LOAD
 engine = create_engine("postgresql://user:password@localhost:5432/weather_db")
 
 with engine.connect() as conn:
@@ -41,6 +41,21 @@ with engine.connect() as conn:
   conn.commit()
 
 df.to_sql("weather_hourly", engine,
-  if_exists="append", index=False, method="multi")
+  if_exists="replace", index=False, method="multi")
 
 print(f"✅ Loaded {len(df)} rows at {datetime.utcnow()}")
+
+# Window function
+from sqlalchemy import text
+
+with engine.connect() as conn:
+    result = conn.execute(text("""
+        SELECT recorded_at, temp_celsius,
+            LAG(temp_celsius) OVER (ORDER BY recorded_at) AS prev_temp,
+            temp_celsius - LAG(temp_celsius) OVER (ORDER BY recorded_at) AS temp_delta
+        FROM weather_hourly
+        WHERE recorded_at >= NOW() - INTERVAL '7 days'
+        ORDER BY recorded_at
+    """))
+    for row in result:
+        print(row)

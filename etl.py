@@ -43,7 +43,7 @@ with engine.connect() as conn:
 df.to_sql("weather_hourly", engine,
   if_exists="replace", index=False, method="multi")
 
-print(f"✅ Loaded {len(df)} rows at {datetime.utcnow()}")
+print(f"+-+ Loaded {len(df)} rows at {datetime.utcnow()}")
 
 # Window function
 from sqlalchemy import text
